@@ -24,7 +24,7 @@ def main():
     print(f'Verifying access to files.')
     verify_all_paths_present(corrected_file_paths)
     files_with_timestamps = list(map(lambda x: { 'path': x[1], 'local_timestamp': data['assets'][x[0]]['localDateTime'].replace(":", "").replace(".", "")}, enumerate(corrected_file_paths)))
-    
+    create_symlinks(files_with_timestamps, args.destination)
 
 def parse_input(input):
     with open(input, 'r') as f:
@@ -47,6 +47,22 @@ def check_file_existence_and_readability(filename):
     if not os.access(filename, os.R_OK):
         return False
     return True
+
+def create_symlinks(files_with_timestamps, destination):
+    for file_with_timestamp in files_with_timestamps:
+        create_symlink(file_with_timestamp['path'], os.path.join(destination, file_with_timestamp['local_timestamp']))
+
+# Source => File on disk
+# Target => Name of the symlink that points to source
+def create_symlink(source, target):
+    if os.path.exists(target):
+        if os.path.islink(target):
+            if os.readlink(target) == os.path.abspath(source):
+                print(f"Symlink {target} already exists and points to {source}, ignoring")
+                return
+            else:
+                raise Exception(f"Symlink {target} exists but points to a different file: {os.readlink(target)}. Wanted to point to {source}.")
+    return os.symlink(source, target)
 
 
 if __name__ == '__main__':
