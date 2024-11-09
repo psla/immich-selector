@@ -4,6 +4,8 @@ import os
 from collections import Counter
 from itertools import groupby
 
+# Example invocation:
+# python immich-selector.py  -i ~/b395bdc8-7e03-4e3b-8e33-681e3bb5e859.json -d /mnt/nas/public/wspolne/Projekty/2023-2024/2024-02_Las_Vegas/media/
 def main():
     parser = argparse.ArgumentParser(description='This program accepts json input from API output from immich, makes symlinks to the files in the desired directories, with filenames corresponding to timestamps')
     parser.add_argument('-i', '--input', type=str, help='File name with immich json file', required=True)
@@ -25,11 +27,15 @@ def main():
     corrected_file_paths = list(map(lambda path: replace_prefix(path, args.old_prefix, args.new_prefix), file_paths))
     print(f'Verifying access to files.')
     verify_all_paths_present(corrected_file_paths)
-    files_with_timestamps = list(map(lambda x: { 'path': x[1], 'local_timestamp': data['assets'][x[0]]['localDateTime'].replace(":", "").replace(".", "")}, enumerate(corrected_file_paths)))
+    files_with_timestamps = list(map(lambda x: { 'path': x[1], 'local_timestamp': create_filename(data['assets'][x[0]]) }, enumerate(corrected_file_paths)))
     repeated_timestamps = list(get_repeated_timestamps(files_with_timestamps))
     if len(repeated_timestamps) > 0:
         raise Exception(f"Found files with identical timestamps={repeated_timestamps}")
     create_symlinks(files_with_timestamps, args.destination)
+
+def create_filename(immich_asset):
+    sanitized_timestamp = immich_asset['localDateTime'].replace(":", "").replace(".", "")
+    return f"{sanitized_timestamp}{os.path.splitext(immich_asset['originalPath'])[1]}"
 
 def get_repeated_timestamps(files_with_timestamps):
     files_with_timestamps = sorted(files_with_timestamps, key=lambda file_with_timestamp: file_with_timestamp['local_timestamp'])
