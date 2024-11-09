@@ -23,6 +23,8 @@ def main():
     corrected_file_paths = list(map(lambda path: replace_prefix(path, args.old_prefix, args.new_prefix), file_paths))
     print(f'Verifying access to files.')
     verify_all_paths_present(corrected_file_paths)
+    files_with_timestamps = list(map(lambda x: { 'path': x[1], 'local_timestamp': data['assets'][x[0]]['localDateTime'].replace(":", "").replace(".", "")}, enumerate(corrected_file_paths)))
+    
 
 def parse_input(input):
     with open(input, 'r') as f:
