@@ -1,6 +1,8 @@
 import argparse
 import json
 import os
+from collections import Counter
+from itertools import groupby
 
 def main():
     parser = argparse.ArgumentParser(description='This program accepts json input from API output from immich, makes symlinks to the files in the desired directories, with filenames corresponding to timestamps')
@@ -24,7 +26,17 @@ def main():
     print(f'Verifying access to files.')
     verify_all_paths_present(corrected_file_paths)
     files_with_timestamps = list(map(lambda x: { 'path': x[1], 'local_timestamp': data['assets'][x[0]]['localDateTime'].replace(":", "").replace(".", "")}, enumerate(corrected_file_paths)))
+    repeated_timestamps = list(get_repeated_timestamps(files_with_timestamps))
+    if len(repeated_timestamps) > 0:
+        raise Exception(f"Found files with identical timestamps={repeated_timestamps}")
     create_symlinks(files_with_timestamps, args.destination)
+
+def get_repeated_timestamps(files_with_timestamps):
+    files_with_timestamps = sorted(files_with_timestamps, key=lambda file_with_timestamp: file_with_timestamp['local_timestamp'])
+    for key, group in groupby(files_with_timestamps, key=lambda file_with_timestamp: file_with_timestamp['local_timestamp']):
+        group = list(group)
+        if len(group) > 1:
+            yield group
 
 def parse_input(input):
     with open(input, 'r') as f:
