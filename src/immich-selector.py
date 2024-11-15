@@ -27,7 +27,7 @@ def main():
     corrected_file_paths = list(map(lambda path: replace_prefix(path, args.old_prefix, args.new_prefix), file_paths))
     print(f'Verifying access to files.')
     verify_all_paths_present(corrected_file_paths)
-    files_with_timestamps = list(map(lambda x: { 'path': x[1], 'local_timestamp': create_filename(data['assets'][x[0]]) }, enumerate(corrected_file_paths)))
+    files_with_timestamps = list(map(lambda x: { 'path': x[1], 'target_filename': create_filename(data['assets'][x[0]]), 'local_timestamp': data['assets'][x[0]]['localDateTime'].replace(":", "").replace(".", "") }, enumerate(corrected_file_paths)))
     repeated_timestamps = list(get_repeated_timestamps(files_with_timestamps))
     if len(repeated_timestamps) > 0:
         raise Exception(f"Found files with identical timestamps={repeated_timestamps}")
@@ -35,7 +35,7 @@ def main():
 
 def create_filename(immich_asset):
     sanitized_timestamp = immich_asset['localDateTime'].replace(":", "").replace(".", "")
-    return f"{sanitized_timestamp}{os.path.splitext(immich_asset['originalPath'])[1]}"
+    return f"{sanitized_timestamp}_{os.path.basename(immich_asset['originalPath'])}"
 
 def get_repeated_timestamps(files_with_timestamps):
     files_with_timestamps = sorted(files_with_timestamps, key=lambda file_with_timestamp: file_with_timestamp['local_timestamp'])
@@ -68,7 +68,7 @@ def check_file_existence_and_readability(filename):
 
 def create_symlinks(files_with_timestamps, destination):
     for file_with_timestamp in files_with_timestamps:
-        create_symlink(file_with_timestamp['path'], os.path.join(destination, file_with_timestamp['local_timestamp']))
+        create_symlink(file_with_timestamp['path'], os.path.join(destination, file_with_timestamp['target_filename']))
 
 # Source => File on disk
 # Target => Name of the symlink that points to source
